@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Page</title>
+    <style>
+        body {
+            margin: 0;
+            background: rgba(0, 0, 0, 0.7); /* Dim background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items from the top */
+            height: 10vh;
+            font-family: Arial, sans-serif;
+            color: white;
+            padding-top: calc(5vh); /* Adjust padding dynamically */
+            box-sizing: border-box; /* Include padding in height calculations */
+        }
+
+        #config-popup {
+            background: #222;
+            padding: 20px;
+            padding-top: 10px; /* Add this line or modify padding-top */
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            max-width: 500px; /* Restrict maximum width */
+            width: 90%; /* Responsive width */
+            box-sizing: border-box;
+            overflow: auto; /* Allow scrolling if content overflows */
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Add spacing between form groups */
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        select, input, button {
+            padding: 10px;
+            font-size: 14px;
+            border: none;
+            border-radius: 5px;
+            width: 100%; /* Ensure inputs fill available width */
+            box-sizing: border-box;
+        }
+
+        select, input[type="file"] {
+            background: #333;
+            color: white;
+        }
+
+        button {
+            background: #007BFF;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .file-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        @media (max-width: 600px) {
+            #config-popup {
+                max-width: 90%;
+            }
+
+            form {
+                gap: 10px;
+            }
+        }
+
+        /* Modal Style */
+        #error-modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background-color: #f44336; /* Red color for error */
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            position: relative;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%;
+            text-align: center;
+        }
+
+        /* Close Button */
+        .close-btn {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        // Listen for keydown event for Ctrl+Z
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'z') {
+                // Redirect to /root2 when Ctrl+Z is pressed
+                window.location.href = '/';
+            }
+        });
+
+
+        // Fetch dropdown options and populate the fields
+        async function loadDropdownOptions() {
+            const response = await fetch('/get-dropdown-options');
+            const data = await response.json();
+
+            // Populate COM ports
+            const comPortSelect = document.getElementById('com_port');
+            data.com_ports.forEach(port => {
+                const option = document.createElement('option');
+                option.value = port;
+                option.textContent = port;
+                comPortSelect.appendChild(option);
+            });
+
+            // Populate GIF files
+            const upGifSelect = document.getElementById('up_gif');
+            const downGifSelect = document.getElementById('down_gif');
+            data.gif_files.forEach(file => {
+                const optionUp = document.createElement('option');
+                const optionDown = document.createElement('option');
+                optionUp.value = file;
+                optionUp.textContent = file;
+                optionDown.value = file;
+                optionDown.textContent = file;
+                upGifSelect.appendChild(optionUp);
+                downGifSelect.appendChild(optionDown);
+            });
+
+            // Populate video files
+            const videoSelect = document.getElementById('video_file');
+            data.video_files.forEach(file => {
+                const option = document.createElement('option');
+                option.value = file;
+                option.textContent = file;
+                videoSelect.appendChild(option);
+            });
+        }
+
+        // Submit form to update the configuration
+        async function submitForm(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const response = await fetch('/update-config', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                alert('Configuration updated successfully!');
+                location.reload(); // Reload to reflect changes
+            } else {
+                // Display the error message on the page
+                const errorMessage = result.message || 'Unknown error occurred.';
+                displayErrorMessage(errorMessage);
+            }
+        }
+
+        // Function to display error messages in the modal
+        function displayErrorMessage(message) {
+            const errorModal = document.getElementById('error-modal');
+            const errorContent = document.getElementById('error-content');
+            errorContent.textContent = message;
+            errorModal.style.display = 'block'; // Show the modal
+        }
+
+        // Function to close the error modal
+        function closeErrorModal() {
+            const errorModal = document.getElementById('error-modal');
+            errorModal.style.display = 'none'; // Hide the modal
+        }
+
+        // Load dropdown options on page load
+        window.onload = () => {
+            loadDropdownOptions();
+        };
+    </script>
+</head>
+<body>
+    <div id="config-popup">
+        <h1>Configuration Page</h1>
+        <!-- Error Modal -->
+        <div id="error-modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeErrorModal()">×</span>
+                <p id="error-content"></p>
+            </div>
+        </div>
+        <form onsubmit="submitForm(event)">
+            <label for="com_port">COM Port:</label>
+            <select id="com_port" name="com_port">
+                <option value="">Select COM Port</option>
+            </select>
+            <br>
+
+            <label for="company_logo">Company Logo:</label>
+            <input type="file" id="company_logo" name="company_logo" accept="image/*">
+            <br>
+
+            <label for="up_gif">Up Arrow GIF:</label>
+            <div class="file-input-group">
+                <input type="file" name="up_gif_file" accept=".gif">
+            </div>
+            <br>
+
+            <label for="down_gif">Down Arrow GIF:</label>
+            <div class="file-input-group">
+                <input type="file" name="down_gif_file" accept=".gif">
+            </div>
+            <br>
+
+            <label for="video_file">Video File:</label>
+            <div class="file-input-group">
+                <input type="file" name="video_file" accept="video/*">
+            </div>
+            <br>
+
+            <label for="company_name">Company Name:</label>
+            <input type="text" id="company_name" name="company_name">
+            <br>
+
+            <button type="submit">Save Configuration</button>
+        </form>
+    </div>
+</body>
+</html>
+
+
