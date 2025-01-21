@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Technologics Global Lift Display</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column; /* Ensure vertical stacking of #main and #bottom-frame */
+      }
+      #fullscreen-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background-color: transparent;
+        color: black;
+        border: none;
+        border-radius: 5px;
+        padding: 5px;
+        cursor: pointer;
+        font-size: 24px; /* Adjust size as needed */
+        display: block;
+        line-height: 1;
+      }
+      #fullscreen-btn:hover {
+        color: #007bff; /* Highlight effect */
+      }
+      #main {
+        display: flex;
+        height: 86%;
+        width: 100%;
+      }
+      #left {
+        width: 25%;
+        height: 100%;
+        background-color: lightblue;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+      }
+      #logo {
+        width: 60%; /* Adjusted to fit the screen */
+        max-width: 150px; /* Ensure the logo doesn't get too big */
+        height: auto;
+        margin: 10px 0; /* Spacing above and below logo */
+      }
+      #direction {
+        width: 70%; /* Adjust size dynamically */
+        height: 35%; /* Adjust size dynamically */
+        margin: auto; /* Center the GIF within the container */
+      }
+      #floor {
+        font-size: calc(50% + 2vw); /* Match font size to arrow size */
+        font-weight: bold;
+        margin: auto; /* Slight spacing from the arrow */
+        text-align: center;
+      }
+
+      #datetime-container {
+        display: flex;
+        justify-content: center; /* Distribute space between time and date */
+        align-items: flex-start; /* Align items to the top */
+        width: 100%;
+        margin: auto;
+        font-weight: bold;
+        color: black;
+      }
+
+      #clock {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 10px; /* Add some space below the clock */
+      }
+
+      #current-date {
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #right {
+        width: 75%;
+        height: 100%;
+        background-color: lightgray;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+      #video-container {
+        width: 100%;
+        flex-grow: 1; /* Default size */
+        background-color: lightgray;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Ensures video scales properly */
+      }
+      #bottom-frame {
+        position: relative;
+        width: 100%;
+        height: 14%;
+        background-color: lightyellow;
+        display: flex;
+        flex-direction: column;
+      }
+      #fault-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 50%; /* Adjust height as needed */
+        background-color: red;
+        color: white;
+        text-align: center;
+        font-size: 1.5vw;
+        font-weight: bold;
+        display: none; /* Initially hidden */
+        z-index: 1000; /* Ensure it overlays the news section */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #news {
+        flex: 1;
+        background-color: lightyellow;
+        font-size: 1.5vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      #news-text {
+        animation: scroll 20s linear infinite;
+      }
+      #company {
+        flex: 1;
+        background-color: lightgreen;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5vw;
+      }
+
+      @keyframes scroll {
+        from {
+          transform: translateX(100%);
+        }
+        to {
+          transform: translateX(-100%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button id="fullscreen-btn" onclick="enterFullscreen()">⧉</button>
+    <div id="main">
+      <div id="left">
+        <img id="logo" src="static/logo.png" alt="Company Logo" />
+        <img id="direction" src="" alt="Direction Arrow" />
+        <div id="floor">0</div>
+        <div id="datetime-container">
+          <div id="clock">
+            <span id="current-time"></span>
+            <div id="current-date">
+              <span id="day-of-week"></span> |
+              <span id="current-date-text"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="right">
+        <div id="video-container">
+          <img
+            id="floor-image"
+            src=""
+            alt="Floor Image"
+            style="width: 100%; height: 100%; object-fit: cover"
+          />
+        </div>
+      </div>
+    </div>
+    <div id="bottom-frame">
+      <div id="fault-container" style="display: none">
+        Faults will be displayed here.
+      </div>
+      <div id="news">
+        <span id="news-text">Loading news...</span>
+      </div>
+      <div id="company">{{ company_name }}</div>
+    </div>
+
+    <script>
+      // Listen for keydown event for Ctrl+Z
+      document.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === "z") {
+          // Redirect to /root2 when Ctrl+Z is pressed
+          window.location.href = "/Configuration Page";
+        }
+      });
+
+      // Enter fullscreen mode
+      function enterFullscreen() {
+        const body = document.body;
+        console.log("Attempting to enter fullscreen...");
+        if (body.requestFullscreen) {
+          body.requestFullscreen().catch((err) => {
+            console.error(`Fullscreen error: ${err.message}`);
+          });
+        } else if (body.webkitRequestFullscreen) {
+          body.webkitRequestFullscreen(); // For Safari
+        } else if (body.mozRequestFullScreen) {
+          body.mozRequestFullScreen(); // For Firefox
+        } else if (body.msRequestFullscreen) {
+          body.msRequestFullscreen(); // For Internet Explorer
+        }
+      }
+
+      // Handle fullscreen change event
+      document.addEventListener("fullscreenchange", () => {
+        const btn = document.getElementById("fullscreen-btn");
+        if (document.fullscreenElement) {
+          btn.style.display = "none"; // Hide the button in fullscreen mode
+        } else {
+          btn.style.display = "block"; // Show the button when exiting fullscreen
+        }
+      });
+
+      fetch("/get-logo-path")
+        .then((response) => response.json())
+        .then((data) => {
+          const logoElement = document.getElementById("logo");
+          logoElement.src = data.logo_path; // Dynamically set the logo path
+        })
+        .catch((error) => console.error("Error fetching logo path:", error));
+
+      // Autoplay video
+      document.addEventListener("DOMContentLoaded", () => {
+        const video = document.getElementById("video");
+        video.play().catch((err) => {
+          console.error(`Video autoplay error: ${err.message}`);
+        });
+      });
+
+      fetch("/get-video-path")
+        .then((response) => response.json())
+        .then((data) => {
+          const videoElement = document.getElementById("videoPlayer");
+          const sourceElement = document.createElement("source");
+          sourceElement.src = data.video_path; // Dynamically set the video path
+          sourceElement.type = "video/mp4"; // Set the MIME type
+          videoElement.appendChild(sourceElement);
+          videoElement.load(); // Reload the video element to apply the new source
+        })
+        .catch((error) => console.error("Error fetching video path:", error));
+
+      // Function to fetch and update faults
+      function updateFaults() {
+        fetch("/faults")
+          .then((response) => response.json())
+          .then((data) => {
+            const faultContainer = document.getElementById("fault-container");
+            //const videoContainer = document.getElementById('video-container');
+
+            if (data.faults && data.faults.length > 0) {
+              // Faults detected: display the fault frame
+              faultContainer.innerText = `Faults: ${data.faults.join(", ")}`;
+              faultContainer.style.display = "flex"; // Show the fault container
+              faultContainer.style.backgroundColor = "red"; // Highlight faults
+              //videoContainer.style.flexGrow = "0.9"; // Adjust video size if fault frame is visible
+            } else {
+              // No faults detected: hide the fault frame
+              faultContainer.style.display = "none"; // Hide the fault container
+              //videoContainer.style.flexGrow = "1"; // Restore full video size
+            }
+          })
+          .catch((err) => {
+            console.error("Error fetching faults:", err);
+          });
+      }
+
+      // Periodically update faults every 5 seconds
+      setInterval(updateFaults, 5000);
+      updateFaults(); // Initial call to populate the fault container
+
+      // Adjust font size dynamically
+      function adjustFontSize() {
+        // Get the width of the left frame
+        var leftFrame = document.getElementById("left");
+        var leftFrameWidth = leftFrame.offsetWidth;
+
+        // Calculate font size based on the left frame width (adjust these percentages as needed)
+        var clockFontSize = leftFrameWidth * 0.07; // 7% of the left frame width for the time
+        var dateFontSize = leftFrameWidth * 0.06; // 6% of the left frame width for the date
+
+        // Apply the calculated font size to the clock and date
+        document.getElementById("clock").style.fontSize = clockFontSize + "px";
+        document.getElementById("current-date").style.fontSize = dateFontSize + "px";
+
+        // Calculate the font size for the floor number to be 5% bigger than the time size
+        var floorFontSize = clockFontSize * 3.5; // 5% larger than the time font size
+
+        // Apply the calculated font size to the floor number
+        document.getElementById("floor").style.fontSize = floorFontSize + "px";
+      }
+
+      window.addEventListener("resize", adjustFontSize); // Re-adjust when the window is resized
+      window.addEventListener("load", adjustFontSize); // Adjust initially when the page loads
+
+      // Periodically fetch lift data
+      setInterval(() => {
+        fetch("/lift-data")
+          .then((response) => response.json())
+          .then((data) => {
+            // Update floor number
+            document.getElementById("floor").innerText = data.floor;
+
+            // Update direction arrow
+            const directionImg = document.getElementById("direction");
+            data.direction = "up";
+            if (data.direction === "up") {
+              directionImg.src = data.up_arrow_gif; // Path to "up" GIF
+            } else if (data.direction === "down") {
+              directionImg.src = data.down_arrow_gif; // Path to "down" GIF
+            } else {
+              directionImg.src = ""; // Clear image if idle
+            }
+          })
+          .catch((error) => console.error("Error fetching lift data:", error));
+      }, 1000);
+
+      // Periodically fetch news
+      setInterval(() => {
+        fetch("/news")
+          .then((response) => response.json())
+          .then((data) => {
+            const newsText = document.getElementById("news-text");
+            newsText.innerText = data.headline || "No news available.";
+          });
+      }, 10000);
+
+      function updateTime() {
+        const now = new Date();
+        const time = now.toLocaleTimeString();
+        const date = now.toLocaleDateString();
+        const day = now.toLocaleString("en-us", { weekday: "long" });
+
+        document.getElementById("current-time").innerText = time;
+        document.getElementById("current-date-text").innerText = date;
+        document.getElementById("day-of-week").innerText = day;
+      }
+
+      setInterval(updateTime, 1000); // Update every second
+      updateTime(); // Initial call to set time
+
+      // List of floor images (replace with your actual paths)
+      const floorImages = [
+        "static/Stock Images/beach (1).jpg", // Floor 1
+        "static/Stock Images/bike (1).jpg", // Floor 2
+        "static/Stock Images/boat (1).jpg", // Floor 3
+        "static/Stock Images/city (1).jpg", // Floor 4
+        "static/Stock Images/farm (1).jpg", // Floor 5
+        "static/Stock Images/flower (1).jpg", // Floor 6
+        "static/Stock Images/forest (1).jpg", // Floor 7
+        "static/Stock Images/nature (1).jpg", // Floor 8
+        "static/Stock Images/neon (1).jpg", // Floor 9
+        "static/Stock Images/village (1).jpg", // Floor 10
+      ];
+
+      // Function to update the floor image
+      function updateFloorImage(floor) {
+        const floorImageElement = document.getElementById("floor-image");
+
+        // Validate the floor number and update the image source
+        if (floor >= 0 && floor <= floorImages.length) {
+          floorImageElement.src = floorImages[floor - 1];
+        } else {
+          floorImageElement.src = ""; // Clear the image if the floor number is invalid
+        }
+      }
+
+      // Update the `setInterval` function that fetches lift data
+      setInterval(() => {
+        fetch("/lift-data")
+          .then((response) => response.json())
+          .then((data) => {
+            // Update floor number
+            document.getElementById("floor").innerText = data.floor;
+
+            // Update direction arrow
+            const directionImg = document.getElementById("direction");
+            if (data.direction === "up") {
+              directionImg.src = data.up_arrow_gif; // Path to "up" GIF
+            } else if (data.direction === "down") {
+              directionImg.src = data.down_arrow_gif; // Path to "down" GIF
+            } else {
+              directionImg.src = ""; // Clear image if idle
+            }
+
+            // Update floor image
+            updateFloorImage(data.floor);
+          })
+          .catch((error) => console.error("Error fetching lift data:", error));
+      }, 1000);
+
+      // Adjust font size on window resize
+      window.addEventListener("resize", adjustFontSize);
+
+      // Initial adjustment
+      adjustFontSize();
+    </script>
+  </body>
+</html>

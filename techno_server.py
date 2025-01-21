@@ -190,7 +190,7 @@ if not com_port:  # In case the value is empty or None
     com_port = "/dev/ttyUSB0"
 # Connect to the COM port
 if not controller.techno_set_com_port(com_port):
-    print(".....Failed to connect to Modbus device.")
+    print(".....Failed to connect to Modbus device. Port:", com_port)
     # exit(1)
 
 
@@ -224,7 +224,7 @@ def index():
     down_arrow_gif = config.get('FILES', 'down_gif_path')
     video_path = config['FILES'].get('video_path', '')  # Fetch the video path from config
     logo_path = config.get('FILES', 'logo_path')
-    return render_template("index.html", company_name=company_name, up_arrow_gif=up_arrow_gif, down_arrow_gif=down_arrow_gif, video_path=video_path, logo_path=logo_path)  # Pass the video_path directly as a string
+    return render_template("index_with_flip_img.html", company_name=company_name, up_arrow_gif=up_arrow_gif, down_arrow_gif=down_arrow_gif, video_path=video_path, logo_path=logo_path)  # Pass the video_path directly as a string
 
 
 @app.route("/Configuration Page")
@@ -243,6 +243,7 @@ def get_lift_data():
     up_arrow_gif = config.get("FILES", "up_gif_path", fallback="static/up_arrow.gif")
     down_arrow_gif = config.get("FILES", "down_gif_path", fallback="static/down_arrow.gif")
     video_path = config.get("FILES", "video_path", fallback="static/smaple2_1080.mp4")
+    print(f"Direction: {direction}, floor: {floor}")
 
     return jsonify({
         "floor": floor,
