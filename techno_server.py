@@ -224,7 +224,7 @@ def index():
     down_arrow_gif = config.get('FILES', 'down_gif_path')
     video_path = config['FILES'].get('video_path', '')  # Fetch the video path from config
     logo_path = config.get('FILES', 'logo_path')
-    return render_template("index_with_flip_img.html", company_name=company_name, up_arrow_gif=up_arrow_gif, down_arrow_gif=down_arrow_gif, video_path=video_path, logo_path=logo_path)  # Pass the video_path directly as a string
+    return render_template("new_alignment.html", company_name=company_name, up_arrow_gif=up_arrow_gif, down_arrow_gif=down_arrow_gif, video_path=video_path, logo_path=logo_path)  # Pass the video_path directly as a string
 
 
 @app.route("/Configuration Page")

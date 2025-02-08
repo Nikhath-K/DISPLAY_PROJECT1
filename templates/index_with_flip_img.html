@@ -113,14 +113,13 @@
       }
       #fault-container {
         position: absolute;
-        top: 0;
-        left: 0;
+        bottom: 0;
         width: 100%;
-        height: 50%; /* Adjust height as needed */
+        height: 10%; /* Adjust height as needed */
         background-color: red;
         color: white;
         text-align: center;
-        font-size: 1.5vw;
+        font-size: 2vw;
         font-weight: bold;
         display: none; /* Initially hidden */
         z-index: 1000; /* Ensure it overlays the news section */
@@ -131,7 +130,8 @@
       #news {
         flex: 1;
         background-color: lightyellow;
-        font-size: 1.5vw;
+        font-size: 2vw;
+        font-weight: bold;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -147,7 +147,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5vw;
+        font-size: 2vw;
+        font-weight: bold;
       }
 
       @keyframes scroll {
@@ -186,12 +187,13 @@
             style="width: 100%; height: 100%; object-fit: cover"
           />
         </div>
+        <div id="fault-container" style="display: none">
+          Faults will be displayed here.
+        </div>
       </div>
     </div>
     <div id="bottom-frame">
-      <div id="fault-container" style="display: none">
-        Faults will be displayed here.
-      </div>
+      
       <div id="news">
         <span id="news-text">Loading news...</span>
       </div>
@@ -325,7 +327,7 @@
 
             // Update direction arrow
             const directionImg = document.getElementById("direction");
-            data.direction = "up";
+            
             if (data.direction === "up") {
               directionImg.src = data.up_arrow_gif; // Path to "up" GIF
             } else if (data.direction === "down") {
@@ -365,11 +367,11 @@
       const floorImages = [
         "static/Stock Images/beach (1).jpg", // Floor 1
         "static/Stock Images/bike (1).jpg", // Floor 2
-        "static/Stock Images/boat (1).jpg", // Floor 3
+        "static/Stock Images/boat (2).jpg", // Floor 3
         "static/Stock Images/city (1).jpg", // Floor 4
         "static/Stock Images/farm (1).jpg", // Floor 5
         "static/Stock Images/flower (1).jpg", // Floor 6
-        "static/Stock Images/forest (1).jpg", // Floor 7
+        "static/Stock Images/forest (2).jpg", // Floor 7
         "static/Stock Images/nature (1).jpg", // Floor 8
         "static/Stock Images/neon (1).jpg", // Floor 9
         "static/Stock Images/village (1).jpg", // Floor 10
@@ -381,7 +383,7 @@
 
         // Validate the floor number and update the image source
         if (floor >= 0 && floor <= floorImages.length) {
-          floorImageElement.src = floorImages[floor - 1];
+          floorImageElement.src = floorImages[floor];
         } else {
           floorImageElement.src = ""; // Clear the image if the floor number is invalid
         }
