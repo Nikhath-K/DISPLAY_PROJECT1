@@ -32,6 +32,6 @@ Refer to the step-by-step guide on Seeed Studio’s Wiki:
 By following these steps, you should be able to successfully reflash the Jetson Nano's OS on its eMMC storage and resolve boot issues. 🚀
 
 
-# To flash os from sd card follow this link: [https://www.forecr.io/blogs/bsp-development/change-root-file-system-to-sd-card-directly]
+# To flash os from sd card follow this link: [https://www.waveshare.com/wiki/JETSON-NANO-DEV-KIT]
 
 
