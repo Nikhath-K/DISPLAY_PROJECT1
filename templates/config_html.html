@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,27 +8,35 @@
     <style>
         body {
             margin: 0;
-            background: rgba(0, 0, 0, 0.7); /* Dim background */
+            background: rgba(0, 0, 0, 0.7);
+            /* Dim background */
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Align items from the top */
+            align-items: flex-start;
+            /* Align items from the top */
             height: 10vh;
             font-family: Arial, sans-serif;
             color: white;
-            padding-top: calc(5vh); /* Adjust padding dynamically */
-            box-sizing: border-box; /* Include padding in height calculations */
+            padding-top: calc(5vh);
+            /* Adjust padding dynamically */
+            box-sizing: border-box;
+            /* Include padding in height calculations */
         }
 
         #config-popup {
             background: #222;
             padding: 20px;
-            padding-top: 10px; /* Add this line or modify padding-top */
+            padding-top: 10px;
+            /* Add this line or modify padding-top */
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-            max-width: 500px; /* Restrict maximum width */
-            width: 90%; /* Responsive width */
+            max-width: 500px;
+            /* Restrict maximum width */
+            width: 90%;
+            /* Responsive width */
             box-sizing: border-box;
-            overflow: auto; /* Allow scrolling if content overflows */
+            overflow: auto;
+            /* Allow scrolling if content overflows */
         }
 
         h1 {
@@ -39,7 +48,8 @@
         form {
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Add spacing between form groups */
+            gap: 15px;
+            /* Add spacing between form groups */
         }
 
         label {
@@ -47,16 +57,20 @@
             margin-bottom: 5px;
         }
 
-        select, input, button {
+        select,
+        input,
+        button {
             padding: 10px;
             font-size: 14px;
             border: none;
             border-radius: 5px;
-            width: 100%; /* Ensure inputs fill available width */
+            width: 100%;
+            /* Ensure inputs fill available width */
             box-sizing: border-box;
         }
 
-        select, input[type="file"] {
+        select,
+        input[type="file"] {
             background: #333;
             color: white;
         }
@@ -90,19 +104,23 @@
 
         /* Modal Style */
         #error-modal {
-            display: none; /* Hidden by default */
+            display: none;
+            /* Hidden by default */
             position: fixed;
-            z-index: 1; /* Sit on top */
+            z-index: 1;
+            /* Sit on top */
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
+            background-color: rgba(0, 0, 0, 0.4);
+            /* Black with opacity */
         }
 
         /* Modal Content */
         .modal-content {
-            background-color: #f44336; /* Red color for error */
+            background-color: #f44336;
+            /* Red color for error */
             color: white;
             padding: 20px;
             border-radius: 5px;
@@ -125,14 +143,86 @@
             cursor: pointer;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         // Listen for keydown event for Ctrl+Z
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             if (event.ctrlKey && event.key === 'z') {
                 // Redirect to /root2 when Ctrl+Z is pressed
                 window.location.href = '/';
             }
         });
+
+        // Toggle video input fields based on selected video source
+        function toggleVideoInput() {
+            const source = document.getElementById("video_source").value;
+            document.getElementById("video_file_div").style.display = (source === "file") ? "block" : "none";
+            document.getElementById("video_link_div").style.display = (source === "link") ? "block" : "none";
+            if (source === "live_tv") {
+                document.getElementById("live_tv_channels_div").style.display = "block";
+                fetchLiveTVChannels();
+            } else {
+                document.getElementById("live_tv_channels_div").style.display = "none";
+            }
+        }
+
+        // Fetch live TV channels from a free API (dummy endpoint used here)
+        async function fetchLiveTVChannels() {
+            try {
+                // For testing, hard-code sample channels
+                const channels = {
+                    "news": "http://nasatv-lh.akamaihd.net/i/NASA_101@319270/master.m3u8",
+                    "cartoon": "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8",
+                    "anime": "https://iptv-org.github.io/iptv/channels/SomeAnimeChannel.m3u8",
+                    "sports": "https://iptv-org.github.io/iptv/channels/SomeSportsChannel.m3u8"
+
+                };
+                const liveTVChannelSelect = document.getElementById('live_tv_channel');
+                liveTVChannelSelect.innerHTML = ''; // Clear previous options
+                for (let key in channels) {
+                    const option = document.createElement('option');
+                    option.value = channels[key]; // Channel URL
+                    option.textContent = key.charAt(0).toUpperCase() + key.slice(1) + " Channel";
+                    liveTVChannelSelect.appendChild(option);
+                }
+            } catch (error) {
+                console.error("Error fetching live TV channels", error);
+            }
+        }
+
+        const videoSrc = "YOUR_LIVE_TV_STREAM_URL"; // e.g., fetched from your config
+        const video = document.getElementById('video');
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(videoSrc);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = videoSrc;
+            video.addEventListener('loadedmetadata', () => {
+                video.play();
+            });
+        }
+
+        function embedVideo(url) {
+            const container = document.getElementById('video-container');
+            if (url.includes("youtube.com") || url.includes("youtu.be")) {
+                let videoId;
+                if (url.includes("watch?v=")) {
+                    videoId = url.split("watch?v=")[1].split("&")[0];
+                } else if (url.includes("youtu.be/")) {
+                    videoId = url.split("youtu.be/")[1].split("?")[0];
+                }
+                const embedUrl = "https://www.youtube.com/embed/" + videoId;
+                container.innerHTML = `<iframe width="560" height="315" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else {
+                // Assume it's a direct URL or HLS stream (use hls.js if needed)
+                container.innerHTML = `<video width="560" controls><source src="${url}" type="video/mp4">Your browser does not support the video tag.</video>`;
+            }
+        }
+
 
 
         // Fetch dropdown options and populate the fields
@@ -215,6 +305,7 @@
         };
     </script>
 </head>
+
 <body>
     <div id="config-popup">
         <h1>Configuration Page</h1>
@@ -248,9 +339,35 @@
             </div>
             <br>
 
-            <label for="video_file">Video File:</label>
+            <label for="video_source">Video Source:</label>
+            <select id="video_source" name="video_source" onchange="toggleVideoInput()">
+                <option value="file">Upload Video File</option>
+                <option value="link">Enter Online Video Link</option>
+                <option value="live_tv">Live TV</option>
+            </select>
+            <br>
+
+            <div id="video_file_div">
+                <label for="video_file">Video File:</label>
+                <input type="file" id="video_file" name="video_file" accept="video/*">
+            </div>
+
+            <div id="video_link_div" style="display: none;">
+                <label for="video_link">Video Link:</label>
+                <input type="text" id="video_link" name="video_link" placeholder="Enter YouTube/Streaming Link">
+            </div>
+            <br>
+
+            <div id="live_tv_channels_div" style="display: none;">
+                <label for="live_tv_channel">Select Live TV Channel:</label>
+                <select id="live_tv_channel" name="live_tv_channel"></select>
+            </div>
+            <br>
+
+            <!-- Use file input with directory selection -->
+            <label for="image_folder">Images Folder:</label>
             <div class="file-input-group">
-                <input type="file" name="video_file" accept="video/*">
+                <input type="file" id="image_folder" name="image_folder" webkitdirectory directory>
             </div>
             <br>
 
@@ -262,6 +379,5 @@
         </form>
     </div>
 </body>
+
 </html>
-
-

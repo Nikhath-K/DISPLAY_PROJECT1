@@ -5,7 +5,8 @@ from techno_modbus_controller import TechnoModbusLiftController
 techno_lift_controller = TechnoModbusLiftController()
 
 # Step 2: Set the COM port
-techno_com_port = "/dev/ttyUSB0"
+print("Enter com port: ", end="")
+techno_com_port = input()
 connection_success = techno_lift_controller.techno_set_com_port(techno_com_port)
 
 if connection_success:
@@ -28,7 +29,7 @@ print(f"Current Floor: {techno_current_floor}")
 
 # Get door status
 techno_door_status = techno_lift_controller.techno_get_door_status()
-print(f"Door Open: {techno_door_status}")
+print(f"Door Status: {techno_door_status}")
 
 # Get movement status
 techno_movement_status = techno_lift_controller.techno_get_movement_status()

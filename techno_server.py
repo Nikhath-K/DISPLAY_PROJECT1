@@ -6,7 +6,7 @@ import os
 import glob
 from serial.tools import list_ports
 from flask import Flask, send_from_directory
-
+import time
 # from flask_cors import CORS
 
 app = Flask(__name__)
@@ -112,13 +112,50 @@ def update_config():
     # Update FILES settings, preserving old paths if no new file is uploaded
     config['FILES']['up_gif_path'] = request.form.get('up_gif_file', config['FILES'].get('up_gif_path', ''))
     config['FILES']['down_gif_path'] = request.form.get('down_gif_file', config['FILES'].get('down_gif_path', ''))
-    config['FILES']['video_path'] = request.form.get('video_file', config['FILES'].get('video_path', ''))
+    
+    
+    # --- Handle Video Source (File, Link, or Live TV) ---
+    video_source = request.form.get("video_source", "file").strip().lower()
+    print("DEBUG: video_source =", video_source)  # Debug print
+
+    if video_source == "live_tv":
+        # Use the selected live TV channel from the form
+        live_tv_channel = request.form.get("live_tv_channel", "").strip()
+        if live_tv_channel:
+            config['FILES']['video_path'] = "live_tv"
+            print("DEBUG: Setting video_path to live TV channel:", live_tv_channel)
+    elif video_source == "link":
+        video_link = request.form.get("video_link", "").strip()
+        print("DEBUG: video_link =", video_link)
+        if video_link:
+            config['FILES']['video_path'] = video_link
+            print("DEBUG: Setting video_path to video_link")
+        else:
+            print("DEBUG: No valid video link provided.")
+            return jsonify({'status': 'error', 'message': 'Please enter a valid video link.'})
+    elif video_source == "file":
+        if 'video_file' in request.files and request.files['video_file'].filename:
+            file = request.files['video_file']
+            if allowed_file(file.filename, allowed_video):
+                video_path = os.path.join(UPLOAD_FOLDER, file.filename)
+                file.save(video_path)
+                config['FILES']['video_path'] = video_path
+                print("DEBUG: Setting video_path to uploaded file:", video_path)
+            else:
+                return jsonify({'status': 'error', 'message': 'Invalid video file type.'})
+        else:
+            # No file uploaded; keep the previous value.
+            print("DEBUG: No video file uploaded; keeping previous video_path.")
+    else:
+        print("DEBUG: Unrecognized video_source; keeping previous video_path.")
+    # ---------------------------------------------------------
 
     # Handle logo file
     if 'company_logo' in request.files and request.files['company_logo'].filename:
         file = request.files['company_logo']
         if allowed_file(file.filename, allowed_image):
             logo_path = os.path.join(UPLOAD_FOLDER, file.filename)
+            os.makedirs(os.path.dirname(logo_path), exist_ok=True)
             file.save(logo_path)
             config['FILES']['logo_path'] = logo_path
         else:
@@ -151,18 +188,50 @@ def update_config():
     else:
         config['FILES']['down_gif_path'] = config['FILES'].get('down_gif_path', '')
 
-    # Handle video file
-    if 'video_file' in request.files and request.files['video_file'].filename:
-        file = request.files['video_file']
-        if allowed_file(file.filename, allowed_video):
-            video_path = os.path.join(UPLOAD_FOLDER, file.filename)
-            file.save(video_path)
-            config['FILES']['video_path'] = video_path
+    
+    # ----- Handle folder upload for images -----
+    image_files = request.files.getlist("image_folder")
+    if image_files:
+        # Get the folder name from the first file's relative path.
+        first_file = image_files[0]
+        folder_name_from_upload = os.path.dirname(first_file.filename).strip()
+        # Browsers often return "C:\fakepath" if no actual folder is provided.
+        if not folder_name_from_upload or "fakepath" in folder_name_from_upload.lower():
+            folder_name_from_upload = "uploaded_images_" + str(int(time.time()))
+        
+        # Check if there is an existing folder in the configuration with the same base name.
+        previous_folder = config['FILES'].get('image_folder', '')
+        if previous_folder and os.path.basename(previous_folder) == folder_name_from_upload:
+            # Replace the existing folder: remove it and recreate it.
+            import shutil
+            try:
+                shutil.rmtree(previous_folder)
+            except Exception as e:
+                print(f"Error removing folder {previous_folder}: {e}")
+            upload_dir = previous_folder
+            os.makedirs(upload_dir, exist_ok=True)
         else:
-            return jsonify({'status': 'error', 'message': f'Invalid file type for Video. Allowed types: {", ".join(allowed_video)}'})
-    else:
-        config['FILES']['video_path'] = config['FILES'].get('video_path', '')
-
+            # Otherwise, create a new directory using the new folder name.
+            upload_dir = os.path.join(UPLOAD_FOLDER, "images", folder_name_from_upload)
+            os.makedirs(upload_dir, exist_ok=True)
+        
+        # Process each file: only save valid image files and skip others.
+        saved_any = False
+        for file in image_files:
+            if allowed_file(file.filename, allowed_image):
+                filename = os.path.basename(file.filename)
+                file_path = os.path.join(upload_dir, filename)
+                file.save(file_path)
+                saved_any = True
+            else:
+                print(f"Skipping file {file.filename} due to invalid type.")
+        
+        # Update the configuration only if at least one valid image was saved.
+        if saved_any:
+            config['FILES']['image_folder'] = upload_dir
+        else:
+            print("No valid image files were uploaded; keeping previous folder setting.")
+    # ---------------------------------------------
     # Save updated configuration
     save_config()
 
@@ -176,6 +245,7 @@ def update_config():
             'up_gif_path': config['FILES'].get('up_gif_path', ''),
             'down_gif_path': config['FILES'].get('down_gif_path', ''),
             'video_path': config['FILES'].get('video_path', ''),
+            'image_folder': config['FILES'].get('image_folder', '')
         }
     })
 
@@ -199,7 +269,20 @@ def get_config_values():
     com_port = config.get("GENERAL", "com_port", fallback="COM1")  # Default COM1 if not set
     company_name = config.get("GENERAL", "company_name", fallback="RTECH Enterprises")
     logo_path = config.get("FILES", "company_logo", fallback="logo.png")
-    video_path = config.get("FILES", "video_path", fallback="vid1.mp4")
+    # Get the video path value from config
+    video_path_raw = config.get("FILES", "video_path", fallback="static/sample2_1080.mp4")
+    
+    # Determine the correct video source based on the configuration value
+    if video_path_raw.lower() == "live_tv":
+        # Option: retrieve a separate URL for live TV (you can store it in config too)
+        video_path = config.get("FILES", "live_tv_url", fallback="http://example.com/live")
+    elif video_path_raw.startswith("http://") or video_path_raw.startswith("https://"):
+        # This is an online video link (e.g., YouTube or another website)
+        video_path = video_path_raw
+    else:
+        # Otherwise, assume it's a local file path
+        video_path = video_path_raw
+
     up_arrow_location = config.get("FILES", "up_gif_path", fallback="up_arrow.gif")
     down_arrow_location = config.get("FILES", "down_gif_path", fallback="down_arrow.gif")
     return {
@@ -242,9 +325,21 @@ def get_lift_data():
     # Fetch GIF paths from configuration
     up_arrow_gif = config.get("FILES", "up_gif_path", fallback="static/up_arrow.gif")
     down_arrow_gif = config.get("FILES", "down_gif_path", fallback="static/down_arrow.gif")
-    video_path = config.get("FILES", "video_path", fallback="static/smaple2_1080.mp4")
-    print(f"Direction: {direction}, floor: {floor}")
+     # Get the video path value from config
+    video_path_raw = config.get("FILES", "video_path", fallback="static/sample2_1080.mp4")
+    
+    # Determine the correct video source based on the configuration value
+    if video_path_raw.lower() == "live_tv":
+        # Option: retrieve a separate URL for live TV (you can store it in config too)
+        video_path = config.get("FILES", "live_tv_url", fallback="http://example.com/live")
+    elif video_path_raw.startswith("http://") or video_path_raw.startswith("https://"):
+        # This is an online video link (e.g., YouTube or another website)
+        video_path = video_path_raw
+    else:
+        # Otherwise, assume it's a local file path
+        video_path = video_path_raw
 
+    print(f"Direction: {direction}, floor: {floor}")
     return jsonify({
         "floor": floor,
         "direction": direction,
